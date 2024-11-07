@@ -5,7 +5,7 @@
 #include <string>
 
 using namespace std;
-const int BITSIZE = 512;  // Kích thước bit cho mã hóa
+const int BITSIZE = 100;  // Kích thước bit cho mã hóa
 using BigInt = bitset<BITSIZE>;
 
 //-------------------------------------------------------------------------------------------------------------
@@ -35,12 +35,13 @@ ostream& operator<<(ostream& os, const BigInt& v) {
     os << binaryArrayToString(v) << endl;
     return os;
 }
-
 // Hàm so sánh hai BigInt
+//bool operator==(const BigInt& a, const BigInt& b) {
+//    return a.to_ulong() == b.to_ulong();
+//}
 int compare(const BigInt& a, const BigInt& b) {
     return (a == b) ? 0 : (a.to_string() > b.to_string() ? 1 : -1);
 }
-
 // Hàm trừ hai số lớn 512 bit, a -= b
 BigInt subtract(const BigInt& a, const BigInt& b) {
     BigInt result = a;
@@ -121,7 +122,7 @@ bool isComposite(const BigInt& n, const BigInt& a, BigInt d) {
     BigInt x = modular_exponentiation(a, d, n);
     BigInt n_minus_1 = subtract(n, BigInt(1));
 
-    if (x == 1 || x == n_minus_1) {
+    if (x == BigInt(1) || x == n_minus_1) {
         return false;
     }
 
@@ -129,8 +130,9 @@ bool isComposite(const BigInt& n, const BigInt& a, BigInt d) {
         x = multiply(x, x);
         x = modulo(x, n);
         d <<= 1;
+        cout << x;
 
-        if (x == 1) return true;
+        if (x == BigInt(1)) return true;
         if (x == n_minus_1) return false;
     }
     return true;
@@ -147,12 +149,14 @@ bool miller_rabin(const BigInt& p, int k = 3) {
     while (!d[0]) d >>= 1;
 
     for (int i = 0; i < k; i++) {
-        uint64_t a = 2 + rand() % (binaryArrayToString(p).length() - 4);
-        BigInt array_a = stringToBinaryArray(to_string(a));
-        if (isComposite(p, array_a, d)) {
+        BigInt a = add(BigInt(2), modulo(BigInt(rand()), subtract(p, BigInt(4))));
+
+        if (isComposite(p, a, d)) {
+            cout << 2;
             return false;
         }
     }
+    cout << 1;
     return true;
 }
 
@@ -164,18 +168,40 @@ bool is_safe_Prime(const BigInt& p) {
             return true;
     return false;
 }
+// Hàm tính log2 của BigInt `p`
+int log2(const BigInt& p) {
+    int bits = 0;
+    BigInt temp = p;
 
+    while (compare(temp, BigInt(0))) {
+        temp = temp >> 1; // Dịch phải một bit
+        bits++;
+    }
+    return bits - 1; // Trả về log2(p)
+}
 // Hàm sinh số nguyên tố an toàn
 BigInt generate_safe_prime(int bitsize) {
     BigInt prime;
+
     do {
         for (int i = 0; i < bitsize; ++i) {
             prime[i] = rand() % 2;
         }
-        prime[BITSIZE - 1] = 1;  // Bit cao nhất phải là 1
-        prime[0] = 1;  // Bit thấp nhất phải là 1
-        cout << 1;
+        prime[bitsize - 1] = 1;  // Đảm bảo bit cao nhất là 1
+        prime[0] = 1;            // Đảm bảo bit thấp nhất là 1
+
+        // Tính log2(p) của `prime` và đặt bước tăng là `2 * log2(p)`
+        int step_value = log2(prime);
+        BigInt step = BigInt(step_value * 2);
+
+        // Tăng `prime` lên `2 * log2(p)` sau mỗi lần kiểm tra thất bại
+        while (!is_safe_Prime(prime)) {
+            prime = add(prime, step); // prime += 2 * log2(p)
+            step_value = log2(prime);
+            step = BigInt(step_value * 2);
+        }
     } while (!is_safe_Prime(prime));
+
     return prime;
 }
 
@@ -196,9 +222,14 @@ BigInt generate_private_key(const BigInt& p) {
 // Hàm chính
 int main() {
     int bit_size = BITSIZE;
-    BigInt p = generate_safe_prime(bit_size);
-    BigInt g = BigInt(2);
-    cout << p;
+
+    //BigInt p = generate_safe_prime(bit_size);
+    //BigInt g = BigInt(2);
+
+    BigInt p = BigInt(23);
+    if (is_safe_Prime(p))
+        cout << p << endl;
+
     //BigInt a = generate_private_key(p);
     //BigInt b = generate_private_key(p);
 
