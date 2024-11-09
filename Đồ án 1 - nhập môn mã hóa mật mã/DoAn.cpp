@@ -320,7 +320,6 @@ int main() {
     cout <<"a="<< a << endl;
     cout <<"p="<< p << endl;
     vector<uint32_t> A = modular_exponentiation(g, a, p); // Alice tính A = g^a % p
-    cout << A << endl;
     //vector<uint32_t> B = modular_exponentiation(g, b, p); // Bob tính B = g^b % p
     // 4. Tính bí mât chung
  //   vector<uint32_t> alice_shared_secret = modular_exponentiation(B, a, p); // Alice tính s = B^a % p
