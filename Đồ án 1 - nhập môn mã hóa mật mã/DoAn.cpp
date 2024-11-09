@@ -36,9 +36,6 @@ ostream& operator<<(ostream& os, const BigInt& v) {
     return os;
 }
 // Hàm so sánh hai BigInt
-//bool operator==(const BigInt& a, const BigInt& b) {
-//    return a.to_ulong() == b.to_ulong();
-//}
 int compare(const BigInt& a, const BigInt& b) {
     for (int i = BITSIZE - 1; i >= 0; --i) {
         if (a[i] > b[i]) return 1;   // `a` lớn hơn `b`
@@ -47,6 +44,8 @@ int compare(const BigInt& a, const BigInt& b) {
     // Nếu tất cả các phần tử đều bằng nhau
     return 0;
 }
+//-------------------------------------------------------------------------------------------------------------
+// A: Triên khai hàm lũy thừa mô - đun
 // Hàm trừ hai số lớn 512 bit, a -= b
 BigInt subtract(const BigInt& a, const BigInt& b) {
     BigInt result = a;
@@ -76,20 +75,20 @@ BigInt add(const BigInt& a, const BigInt& b) {
 // Hàm lấy các vị trí của các bit 1 trong BigInt
 int getBitPositions(const BigInt& a) {
     int positions;
-    for (int i = 0; i < BITSIZE; ++i) {
+    for (int i = BITSIZE - 1; i >= 0; --i) {
         if (a[i]) {
             positions = i;  // Lưu vị trí bit 1
+            return positions;
         }
     }
-    return positions;
 }
 // Hàm chia lấy dư của 512-bit số lớn
 BigInt modulo(const BigInt& a, const BigInt& mod) {
     BigInt result = a;
     while (compare(result, mod) >= 0) {
-        cout << "Chay modul" << endl;
         BigInt tempB = mod;
         int shift = getBitPositions(a) - getBitPositions(mod) - 1;
+        if (shift < 0) shift = 0;
         tempB <<= shift;  // dịch trái để mod lớn bằng a
         result = subtract(result, tempB);
     }
@@ -107,21 +106,15 @@ BigInt multiply(const BigInt& a, const BigInt& b) {
     }
     return result;
 }
-
 // Hàm dịch phải 1 bit (chia cho 2)
 BigInt shiftRight(const BigInt& a) {
     return a >> 1;
 }
-
 // Hàm tính lũy thừa modular: base^exponent % mod
 BigInt modular_exponentiation(BigInt base, BigInt exponent, BigInt mod) {
     BigInt result = BigInt(1);
     base = modulo(base, mod);
-    cout << result;
-    cout << base;
-    int i = 0;
     while (exponent.any()) {  // Kiểm tra nếu có bit nào là 1
-        cout << i++ << endl;
         if (exponent[0]) {    // Kiểm tra bit cuối
             result = multiply(result, base);
             result = modulo(result, mod);
@@ -135,10 +128,12 @@ BigInt modular_exponentiation(BigInt base, BigInt exponent, BigInt mod) {
     }
     return result;
 }
-
+//-------------------------------------------------------------------------------------------------------------
+// B: Triên khai hàm sinh s´ô nguyên t´ô ng˜âu nhiên
 // Hàm kiểm tra hợp số bằng Miller-Rabin
 bool isComposite(const BigInt& n, const BigInt& a, BigInt d) {
     BigInt x = modular_exponentiation(a, d, n);
+    cout << "x = " << x;
     BigInt n_minus_1 = subtract(n, BigInt(1));
 
     if (x == BigInt(1) || x == n_minus_1) {
@@ -147,16 +142,16 @@ bool isComposite(const BigInt& n, const BigInt& a, BigInt d) {
 
     while (d != n_minus_1) {
         x = multiply(x, x);
+        cout << "x*x = " << x;
         x = modulo(x, n);
+        cout << "x%n = " << x;
         d <<= 1;
-        cout << x;
 
         if (x == BigInt(1)) return true;
         if (x == n_minus_1) return false;
     }
     return true;
 }
-
 // Kiểm tra số nguyên tố bằng thuật toán Miller-Rabin
 bool miller_rabin(const BigInt& p, int k = 3) {
     if (p == BigInt(0)) return false; // 0 không phải là số nguyên tố
@@ -166,19 +161,20 @@ bool miller_rabin(const BigInt& p, int k = 3) {
 
     BigInt d = subtract(p, BigInt(1));
     while (!d[0]) d >>= 1;
+    cout << "d = " << d;
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<uint32_t> dist(0, UINT32_MAX);
 
     for (int i = 0; i < k; i++) {
-        BigInt a = add(BigInt(2), modulo(BigInt(rand()), subtract(p, BigInt(4))));
-
+        BigInt a = add(BigInt(2), modulo(BigInt(dist(gen)), subtract(p, BigInt(4))));
+        cout << "a = " << a;
         if (isComposite(p, a, d)) {
-            cout << 2;
             return false;
         }
     }
-    cout << 1;
     return true;
 }
-
 // Hàm kiểm tra số nguyên tố an toàn
 bool is_safe_Prime(const BigInt& p) {
     BigInt p_minus_1_div_2 = shiftRight(subtract(p, BigInt(1)));
@@ -201,20 +197,24 @@ int log2(const BigInt& p) {
 // Hàm sinh số nguyên tố an toàn
 BigInt generate_safe_prime(int bitsize) {
     BigInt prime;
-
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<uint32_t> dist(0, UINT32_MAX);
+    int i = 0;
     do {
         for (int i = 0; i < bitsize; ++i) {
-            prime[i] = rand() % 2;
+            prime[i] = dist(gen) % 2;
         }
         prime[bitsize - 1] = 1;  // Đảm bảo bit cao nhất là 1
         prime[0] = 1;            // Đảm bảo bit thấp nhất là 1
-
+        cout << i++ << "--------> " << prime;
         // Tính log2(p) của `prime` và đặt bước tăng là `2 * log2(p)`
         int step_value = log2(prime);
         BigInt step = BigInt(step_value * 2);
 
         // Tăng `prime` lên `2 * log2(p)` sau mỗi lần kiểm tra thất bại
         while (!is_safe_Prime(prime)) {
+            cout << i++ << "--------> " << prime;
             prime = add(prime, step); // prime += 2 * log2(p)
             step_value = log2(prime);
             step = BigInt(step_value * 2);
@@ -223,7 +223,8 @@ BigInt generate_safe_prime(int bitsize) {
 
     return prime;
 }
-
+//-------------------------------------------------------------------------------------------------------------
+// C: Triên khai hàm sinh khóa riêng ng˜âu nhiên
 // Hàm sinh khóa riêng trong khoảng [2, p - 2]
 BigInt generate_private_key(const BigInt& p) {
     BigInt max_limit = subtract(p, BigInt(2));
@@ -237,38 +238,26 @@ BigInt generate_private_key(const BigInt& p) {
 
     return private_key;
 }
-
+//-------------------------------------------------------------------------------------------------------------
+// D: Hoàn thành logic trao đôi khóa Diffie - Hellman
 // Hàm chính
 int main() {
-    int bit_size = BITSIZE;
+    int bit_size = 500;
 
-    //BigInt p = generate_safe_prime(bit_size);
+    BigInt p = generate_safe_prime(bit_size);
     BigInt g = BigInt(2);
-    //BigInt a = generate_private_key(p);
-    //BigInt b = generate_private_key(p);
-    //string bitString = "1000000001"; // số 513
-    //BigInt a(bitString);    
 
-    //bitString = "100111100111010011010001101101111001000111100000011111100100100001110111010111101010001001100100110011110101010100110100011111011100101001001001111100011100000001010001001000001100100111000111100111111111010000101011010101110001011101110011100110011000010100100110011101101110110101101001111101001000001010000000010001101001000111010111100010110010000100110011001101100110100010000101001111011100101001111000001010000011010";
-    //BigInt p(bitString);
-    //cout << p;
-    //BigInt A = modular_exponentiation(g, a, p); // 2 mũ 511 chia lấy dư cho số 512 bit sẽ ra 2 mũ 511 đúng
-    //cout << "A = " << A;
+    BigInt a = generate_private_key(p);
+    BigInt b = generate_private_key(p);
 
+    BigInt A = modular_exponentiation(g, a, p);
+    BigInt B = modular_exponentiation(g, b, p);
 
-    string bitString = "100000";
-    BigInt a(bitString);
-    bitString = "10111"; 
-    BigInt b(bitString);
-    cout << modulo(a, b);
-    
-    //BigInt B = modular_exponentiation(g, b, p);
+    BigInt alice_shared_secret = modular_exponentiation(B, a, p);
+    BigInt bob_shared_secret = modular_exponentiation(A, b, p);
 
-    //BigInt alice_shared_secret = modular_exponentiation(B, a, p);
-    //BigInt bob_shared_secret = modular_exponentiation(A, b, p);
-
-    //cout << "Bi mat chung Alice nhan duoc: " << alice_shared_secret;
-    //cout << "Bi mat chung Bob nhan duoc: " << bob_shared_secret;
-    //cout << "Qua trinh tinh toan dung khong? " << (alice_shared_secret == bob_shared_secret) << endl;
+    cout << "Bi mat chung Alice nhan duoc: " << alice_shared_secret;
+    cout << "Bi mat chung Bob nhan duoc: " << bob_shared_secret;
+    cout << "Qua trinh tinh toan dung khong? " << (alice_shared_secret == bob_shared_secret) << endl;
     return 0;
 }
