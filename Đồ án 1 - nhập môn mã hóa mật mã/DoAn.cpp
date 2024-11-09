@@ -3,13 +3,13 @@
 #include <random>
 #include <algorithm>
 #include <string>
-
 using namespace std;
+
 const int BITSIZE = 1024;  // Kích thước bit cho mã hóa
 using BigInt = bitset<BITSIZE>;
 
 //-------------------------------------------------------------------------------------------------------------
-// Hàm chuyển đổi từ BigInt thành chuỗi nhị phân (thay vì int)
+// Hàm chuyển đổi từ BigInt thành chuỗi nhị phân
 string binaryArrayToString(const BigInt& binary) {
     string result;
     for (int i = BITSIZE - 1; i >= 0; --i) {
@@ -28,9 +28,8 @@ BigInt stringToBinaryArray(const string& str) {
     }
     return result;
 }
-
-// Toán tử << được hỗ trợ tự động với std::bitset, không cần định nghĩa lại
 //-------------------------------------------------------------------------------------------------------------
+// Toán tử << 
 ostream& operator<<(ostream& os, const BigInt& v) {
     os << binaryArrayToString(v) << endl;
     return os;
@@ -46,7 +45,7 @@ int compare(const BigInt& a, const BigInt& b) {
 }
 //-------------------------------------------------------------------------------------------------------------
 // A: Triên khai hàm lũy thừa mô - đun
-// Hàm trừ hai số lớn 512 bit, a -= b
+// Hàm trừ hai số lớn BigInt
 BigInt subtract(const BigInt& a, const BigInt& b) {
     BigInt result = a;
     bool borrow = false;
@@ -59,7 +58,7 @@ BigInt subtract(const BigInt& a, const BigInt& b) {
     }
     return result;
 }
-// Hàm cộng hai số lớn 512 bit
+// Hàm cộng hai số lớn BigInt
 BigInt add(const BigInt& a, const BigInt& b) {
     BigInt result;
     bool carry = false;
@@ -72,7 +71,7 @@ BigInt add(const BigInt& a, const BigInt& b) {
     }
     return result;
 }
-// Hàm lấy các vị trí của các bit 1 trong BigInt
+// Hàm lấy các vị trí của các bit 1 lớn nhất trong BigInt
 int getBitPositions(const BigInt& a) {
     int positions;
     for (int i = BITSIZE - 1; i >= 0; --i) {
@@ -82,7 +81,7 @@ int getBitPositions(const BigInt& a) {
         }
     }
 }
-// Hàm chia lấy dư của 512-bit số lớn
+// Hàm chia lấy dư của BigInt
 BigInt modulo(const BigInt& a, const BigInt& mod) {
     BigInt result = a;
     while (compare(result, mod) >= 0) {
@@ -94,7 +93,7 @@ BigInt modulo(const BigInt& a, const BigInt& mod) {
     }
     return result;
 }
-// Hàm nhân hai số lớn
+// Hàm nhân hai số lớn BigInt
 BigInt multiply(const BigInt& a, const BigInt& b) {
     BigInt result;
     for (int i = 0; i < BITSIZE; ++i) {
@@ -130,7 +129,7 @@ BigInt modular_exponentiation(BigInt base, BigInt exponent, BigInt mod) {
 }
 //-------------------------------------------------------------------------------------------------------------
 // B: Triên khai hàm sinh s´ô nguyên t´ô ng˜âu nhiên
-// Hàm kiểm tra hợp số bằng Miller-Rabin
+// Hàm kiểm tra hợp số của Miller-Rabin
 bool isComposite(const BigInt& n, const BigInt& a, BigInt d) {
     BigInt x = modular_exponentiation(a, d, n);
     cout << "x = " << x;
@@ -153,40 +152,41 @@ bool isComposite(const BigInt& n, const BigInt& a, BigInt d) {
     return true;
 }
 // Kiểm tra số nguyên tố bằng thuật toán Miller-Rabin
-bool miller_rabin(const BigInt& p, int k = 3) {
-    if (p == BigInt(0)) return false; // 0 không phải là số nguyên tố
-    if (p == BigInt(1)) return false; // 1 không phải là số nguyên tố
-    if (p == BigInt(2)) return true; // 2 là số nguyên tố
-    if (p == BigInt(3)) return true; // Số chẵn lớn hơn 2 không phải là số nguyên tố   
+bool miller_rabin(const BigInt& prime, int k = 3) {
+    if (prime == BigInt(0)) return false; // 0 không phải là số nguyên tố
+    if (prime == BigInt(1)) return false; // 1 không phải là số nguyên tố
+    if (prime == BigInt(2)) return true; // 2 là số nguyên tố
+    if (prime == BigInt(3)) return true; // Số chẵn lớn hơn 2 không phải là số nguyên tố   
 
-    BigInt d = subtract(p, BigInt(1));
+    BigInt d = subtract(prime, BigInt(1));
     while (!d[0]) d >>= 1;
     cout << "d = " << d;
+
     random_device rd;
     mt19937 gen(rd());
-    uniform_int_distribution<uint32_t> dist(0, UINT32_MAX);
+    uniform_int_distribution<uint32_t> dist(0, UINT32_MAX); // Hàm sinh số ngẫu nhiên để tắng tính ngầu nhiên
 
     for (int i = 0; i < k; i++) {
-        BigInt a = add(BigInt(2), modulo(BigInt(dist(gen)), subtract(p, BigInt(4))));
+        BigInt a = add(BigInt(2), modulo(BigInt(dist(gen)), subtract(prime, BigInt(4))));
         cout << "a = " << a;
-        if (isComposite(p, a, d)) {
+        if (isComposite(prime, a, d)) {
             return false;
         }
     }
     return true;
 }
 // Hàm kiểm tra số nguyên tố an toàn
-bool is_safe_Prime(const BigInt& p) {
-    BigInt p_minus_1_div_2 = shiftRight(subtract(p, BigInt(1)));
-    if (miller_rabin(p))
+bool is_safe_Prime(const BigInt& prime) {
+    BigInt p_minus_1_div_2 = shiftRight(subtract(prime, BigInt(1)));
+    if (miller_rabin(prime))
         if (miller_rabin(p_minus_1_div_2))
             return true;
     return false;
 }
-// Hàm tính log2 của BigInt `p`
-int log2(const BigInt& p) {
+// Hàm tính log2 của BigInt `p` để làm bước nhảy
+int log2(const BigInt& prime) {
     int bits = 0;
-    BigInt temp = p;
+    BigInt temp = prime;
 
     while (compare(temp, BigInt(0))) {
         temp = temp >> 1; // Dịch phải một bit
@@ -194,7 +194,7 @@ int log2(const BigInt& p) {
     }
     return bits - 1; // Trả về log2(p)
 }
-// Hàm sinh số nguyên tố an toàn
+// Hàm sinh số nguyên tố an toàn theo bitsize
 BigInt generate_safe_prime(int bitsize) {
     BigInt prime;
     random_device rd;
@@ -208,14 +208,14 @@ BigInt generate_safe_prime(int bitsize) {
         prime[bitsize - 1] = 1;  // Đảm bảo bit cao nhất là 1
         prime[0] = 1;            // Đảm bảo bit thấp nhất là 1
         cout << i++ << "--------> " << prime;
+
         // Tính log2(p) của `prime` và đặt bước tăng là `2 * log2(p)`
         int step_value = log2(prime);
         BigInt step = BigInt(step_value * 2);
 
-        // Tăng `prime` lên `2 * log2(p)` sau mỗi lần kiểm tra thất bại
         while (!is_safe_Prime(prime)) {
             cout << i++ << "--------> " << prime;
-            prime = add(prime, step); // prime += 2 * log2(p)
+            prime = add(prime, step); // Tăng `prime` lên `2 * log2(p)` sau mỗi lần kiểm tra thất bại
             step_value = log2(prime);
             step = BigInt(step_value * 2);
         }
@@ -226,8 +226,8 @@ BigInt generate_safe_prime(int bitsize) {
 //-------------------------------------------------------------------------------------------------------------
 // C: Triên khai hàm sinh khóa riêng ng˜âu nhiên
 // Hàm sinh khóa riêng trong khoảng [2, p - 2]
-BigInt generate_private_key(const BigInt& p) {
-    BigInt max_limit = subtract(p, BigInt(2));
+BigInt generate_private_key(const BigInt& prime) {
+    BigInt max_limit = subtract(prime, BigInt(2));
     BigInt private_key;
 
     do {
