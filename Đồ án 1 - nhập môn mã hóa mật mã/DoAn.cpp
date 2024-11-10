@@ -86,9 +86,10 @@ BigInt modulo(const BigInt& a, const BigInt& mod) {
     BigInt result = a;
     while (compare(result, mod) >= 0) {
         BigInt tempB = mod;
-        int shift = getBitPositions(a) - getBitPositions(mod) - 1;
-        if (shift < 0) shift = 0;
-        tempB <<= shift;  // dịch trái để mod lớn bằng a
+        int shift = getBitPositions(result) - getBitPositions(mod);
+        tempB <<= shift;  // dịch trái để mod lớn bằng a để trừ nhanh hơn
+        if (!compare(result, tempB))
+            tempB >>= 1;
         result = subtract(result, tempB);
     }
     return result;
@@ -113,9 +114,12 @@ BigInt shiftRight(const BigInt& a) {
 BigInt modular_exponentiation(BigInt base, BigInt exponent, BigInt mod) {
     BigInt result = BigInt(1);
     base = modulo(base, mod);
+    cout << "base = " << base;
+
     while (exponent.any()) {  // Kiểm tra nếu có bit nào là 1
         if (exponent[0]) {    // Kiểm tra bit cuối
             result = multiply(result, base);
+            cout << "result = " << result;
             result = modulo(result, mod);
             cout << "result = " << result;
         }
@@ -239,10 +243,10 @@ BigInt generate_private_key(const BigInt& prime) {
     return private_key;
 }
 //-------------------------------------------------------------------------------------------------------------
-// D: Hoàn thành logic trao đôi khóa Diffie - Hellman
+// D: Hoàn thành logic trao đổi khóa Diffie - Hellman
 // Hàm chính
 int main() {
-    int bit_size = 500;
+    /*int bit_size = 500;
 
     BigInt p = generate_safe_prime(bit_size);
     BigInt g = BigInt(2);
@@ -258,6 +262,14 @@ int main() {
 
     cout << "Bi mat chung Alice nhan duoc: " << alice_shared_secret;
     cout << "Bi mat chung Bob nhan duoc: " << bob_shared_secret;
-    cout << "Qua trinh tinh toan dung khong? " << (alice_shared_secret == bob_shared_secret) << endl;
+    cout << "Qua trinh tinh toan dung khong? " << (alice_shared_secret == bob_shared_secret) << endl;*/
+
+    string bitstring = "1000111001111011111101101110111011001111111101011000011000010110000110000010000110111000001010111000100011011111101010000100010000110101011101011010110001100010011001111011111110101111011000010010101011110001111010101101011000100000010101100010111010001100110101101101100011101110001101110001010001111100110011110111011010100111000100100100010000110001101000100001011111000110011001111111100011001011011001110001111110000101011010010";
+    BigInt base(bitstring);
+    bitstring = "1000001011111101110011001110010011010101001011110100101011100001001110101011001111011010111110001000101111001011111110011000111001111100110101011100000110010011010001001101110010110001001000000110110111101111100000010110010111101010011010011011111101101111101011001001110000011000010010101111100001010010110000000011111100100101000110110111010001101001000110100010100111111";
+    BigInt exponent(bitstring);
+    bitstring = "10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001";
+    BigInt mod(bitstring);
+    cout << modular_exponentiation(base, exponent, mod);
     return 0;
 }
