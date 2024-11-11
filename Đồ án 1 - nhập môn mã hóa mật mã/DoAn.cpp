@@ -5,7 +5,7 @@
 #include <string>
 using namespace std;
 
-const int BITSIZE = 512;  // Kích thước bit cho mã hóa
+const int BITSIZE = 1024;  // Kích thước bit cho mã hóa
 using BigInt = bitset<BITSIZE>;
 
 //-------------------------------------------------------------------------------------------------------------
@@ -202,12 +202,12 @@ BigInt generate_safe_prime(int bitsize) {
         }
         prime[bitsize - 1] = 1;  // Đảm bảo bit cao nhất là 1
         prime[0] = 1;            // Đảm bảo bit thấp nhất là 1
-
         // Tính log2(p) của `prime` và đặt bước tăng là `2 * log2(p)`
         int step_value = log2(prime);
         BigInt step = BigInt(step_value * 2);
 
         while (!is_safe_Prime(prime)) {
+            cout << i++ << "----->" << prime;
             prime = add(prime, step); // Tăng `prime` lên `2 * log2(p)` sau mỗi lần kiểm tra thất bại
             step_value = log2(prime);
             step = BigInt(step_value * 2);
@@ -222,22 +222,21 @@ BigInt generate_safe_prime(int bitsize) {
 BigInt generate_private_key(const BigInt& prime) {
     BigInt max_limit = subtract(prime, BigInt(2));
     BigInt private_key;
-
     do {
-        for (int i = 0; i < BITSIZE; ++i) {
+        for (int i = 0; i < getBitPositions(prime) - 1; ++i) {
             private_key[i] = rand() % 2;
         }
-    } while (compare(private_key, 1) < 0 || compare(private_key, max_limit) > 0);
-
+    } while (compare(private_key, BigInt(1)) < 0 || compare(private_key, max_limit) > 0);
     return private_key;
 }
 //-------------------------------------------------------------------------------------------------------------
 // D: Hoàn thành logic trao đổi khóa Diffie - Hellman
 // Hàm chính
 int main() {
-    int bit_size = 500;
+    int bit_size = 512;
 
-    BigInt p = generate_safe_prime(bit_size);
+    //BigInt p = generate_safe_prime(bit_size);
+    BigInt p("11100101101010100100000101011011100001000001010011110100010101101011001111100100100111111000010111110000110100010010010111010110001010011001110111011101011111110000010110001000111100010100110111111111100000001110110000110101010101000010100111100110010100010100100000010001000010001011101011100001001100111101010111101001111110010001000011001100011000100011010101110001100001011100110101101110100101011001110111110100001000001010000001010101111110011011110110001001011011110111101111110011101000000010001010110011");
     BigInt g = BigInt(2);
 
     BigInt a = generate_private_key(p);
